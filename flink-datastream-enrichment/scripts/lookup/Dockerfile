@@ -1,0 +1,7 @@
+FROM python:3.9-slim-buster
+WORKDIR /app
+
+COPY requirements.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+COPY .. .
+CMD ["python", "datagen.py", "--host", "postgres-postgresql", "--port", "5432", "--dbname", "postgres", "--user", "postgres", "--password", "postgres", "--schema", "public", "--num-records", "400"]

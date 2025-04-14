@@ -1,0 +1,65 @@
+apiVersion: flink.apache.org/v1beta1
+kind: FlinkDeployment
+metadata:
+  name: flink-datastream-enrichment
+spec:
+  image: abyssnlp/flink-datastream-enrichment:0.1
+  flinkVersion: v1_20
+  flinkConfiguration:
+    taskmanager.numberOfTaskSlots: "2"
+    heartbeat.timeout: "300000"
+    heartbeat.interval: "10000"
+    pekko.ask.timeout: "600s"
+
+    env.java.opts: >-
+      -XX:+UseG1GC 
+      -XX:MaxGCPauseMillis=100 
+      -XX:+HeapDumpOnOutOfMemoryError 
+      -XX:HeapDumpPath=/tmp/heap-dump.hprof
+      -XX:G1HeapRegionSize=4m
+      -XX:+ExitOnOutOfMemoryError
+      -XX:+ParallelRefProcEnabled
+      -XX:+DisableExplicitGC
+
+    restart-strategy: fixed-delay
+    restart-strategy.fixed-delay.attempts: "3"
+    restart-strategy.fixed-delay.delay: "30s"
+
+    state.backend: rocksdb
+    state.backend.incremental: "true"
+    state.backend.rocksdb.memory.managed: "true"
+    state.backend.rocksdb.use-bloom-filter: "true"
+
+    high-availability.type: kubernetes
+  serviceAccount: flink
+  podTemplate:
+    spec:
+      containers:
+        - name: flink-main-container
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                secretKeyRef:
+                  name: flink-datastream-enrichment-secret
+                  key: KAFKA_BOOTSTRAP_SERVERS
+            - name: KAFKA_GROUP_ID
+              valueFrom:
+                secretKeyRef:
+                  name: flink-datastream-enrichment-secret
+                  key: KAFKA_GROUP_ID
+            - name: KAFKA_TOPIC
+              valueFrom:
+                secretKeyRef:
+                  name: flink-datastream-enrichment-secret
+                  key: KAFKA_TOPIC
+  jobManager:
+    resource:
+      memory: "2Gi"
+      cpu: 1
+  taskManager:
+    resource:
+      memory: "4Gi"
+      cpu: 2
+  job:
+    jarURI: local:///opt/flink-jobs/flink-datastream-enrichment-0.1.jar
+    parallelism: 1

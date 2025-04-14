@@ -1,9 +1,9 @@
-package com.unskewdata;
+package com.github.abyssnlp;
 
-import com.unskewdata.functions.AveragePerMonthProcessFunction;
-import com.unskewdata.functions.StockPriceMapper;
-import com.unskewdata.functions.TotalAverageMonthProcessFunction;
-import com.unskewdata.models.StockPrice;
+import com.github.abyssnlp.functions.AveragePerMonthProcessFunction;
+import com.github.abyssnlp.functions.StockPriceMapper;
+import com.github.abyssnlp.functions.TotalAverageMonthProcessFunction;
+import com.github.abyssnlp.models.StockPrice;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import org.apache.flink.api.common.RuntimeExecutionMode;

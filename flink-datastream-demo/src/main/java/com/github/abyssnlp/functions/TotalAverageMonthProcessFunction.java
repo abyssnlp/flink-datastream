@@ -1,6 +1,6 @@
-package com.unskewdata.functions;
+package com.github.abyssnlp.functions;
 
-import com.unskewdata.models.StockPrice;
+import com.github.abyssnlp.models.StockPrice;
 import org.apache.flink.api.common.functions.OpenContext;
 import org.apache.flink.api.common.state.MapState;
 import org.apache.flink.api.common.state.MapStateDescriptor;
@@ -8,8 +8,6 @@ import org.apache.flink.api.common.typeinfo.TypeHint;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
-import org.apache.flink.streaming.api.functions.KeyedProcessFunction.Context;
-import org.apache.flink.streaming.api.functions.KeyedProcessFunction.OnTimerContext;
 import org.apache.flink.util.Collector;
 
 public class TotalAverageMonthProcessFunction extends

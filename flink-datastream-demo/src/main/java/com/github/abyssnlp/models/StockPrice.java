@@ -1,4 +1,4 @@
-package com.unskewdata.models;
+package com.github.abyssnlp.models;
 
 public class StockPrice {
 

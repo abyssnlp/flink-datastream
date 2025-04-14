@@ -1,6 +1,6 @@
-package com.unskewdata.functions;
+package com.github.abyssnlp.functions;
 
-import com.unskewdata.models.StockPrice;
+import com.github.abyssnlp.models.StockPrice;
 import org.apache.flink.api.common.functions.OpenContext;
 import org.apache.flink.api.common.functions.RichMapFunction;
 
