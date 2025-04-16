@@ -12,7 +12,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import java.util.Map;
 
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         Map<String, String> envVars = System.getenv();
         String kafkaBootstrapServers = envVars.get("KAFKA_BOOTSTRAP_SERVERS");
@@ -29,7 +29,7 @@ public class Main {
         KafkaSource<String> source = KafkaSource.<String>builder()
                 .setBootstrapServers(kafkaBootstrapServers)
                 .setTopics(kafkaTopic)
-                .setGroupId(kafkaGroupId)
+                .setGroupId("tester_v1")
                 .setStartingOffsets(OffsetsInitializer.earliest())
                 .setValueOnlyDeserializer(new SimpleStringSchema())
                 .setProperty("enable.auto.commit", "false")
@@ -40,5 +40,7 @@ public class Main {
         DataStream<String> stream = env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source");
 
         stream.print();
+
+        env.execute("Flink datastream enrichment");
     }
 }

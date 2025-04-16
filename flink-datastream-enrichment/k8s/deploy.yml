@@ -3,7 +3,7 @@ kind: FlinkDeployment
 metadata:
   name: flink-datastream-enrichment
 spec:
-  image: abyssnlp/flink-datastream-enrichment:0.1
+  image: abyssnlp/flink-datastream-enrichment:1.0
   flinkVersion: v1_20
   flinkConfiguration:
     taskmanager.numberOfTaskSlots: "2"
@@ -30,7 +30,6 @@ spec:
     state.backend.rocksdb.memory.managed: "true"
     state.backend.rocksdb.use-bloom-filter: "true"
 
-    high-availability.type: kubernetes
   serviceAccount: flink
   podTemplate:
     spec:
@@ -61,5 +60,5 @@ spec:
       memory: "4Gi"
       cpu: 2
   job:
-    jarURI: local:///opt/flink-jobs/flink-datastream-enrichment-0.1.jar
-    parallelism: 1
+    jarURI: local:///opt/flink-jobs/flink-datastream-enrichment-1.0.jar
+    parallelism: 2
