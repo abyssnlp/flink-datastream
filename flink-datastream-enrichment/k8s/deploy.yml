@@ -6,6 +6,7 @@ spec:
   image: abyssnlp/flink-datastream-enrichment:1.0
   flinkVersion: v1_20
   flinkConfiguration:
+    rest.flamegraph.enabled: "true"
     taskmanager.numberOfTaskSlots: "2"
     heartbeat.timeout: "300000"
     heartbeat.interval: "10000"
@@ -51,6 +52,26 @@ spec:
                 secretKeyRef:
                   name: flink-datastream-enrichment-secret
                   key: KAFKA_TOPIC
+            - name: KAFKA_ENRICHED_TOPIC
+              valueFrom:
+                secretKeyRef:
+                  name: flink-datastream-enrichment-secret
+                  key: KAFKA_ENRICHED_TOPIC
+            - name: POSTGRES_URL
+              valueFrom:
+                secretKeyRef:
+                  name: flink-datastream-enrichment-secret
+                  key: POSTGRES_URL
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: flink-datastream-enrichment-secret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: flink-datastream-enrichment-secret
+                  key: POSTGRES_PASSWORD
   jobManager:
     resource:
       memory: "2Gi"
