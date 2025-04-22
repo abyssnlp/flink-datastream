@@ -5,7 +5,6 @@ import argparse
 from typing import Dict, Any
 from datetime import datetime
 from kafka import KafkaProducer
-from faker import Faker
 
 
 class KafkaJsonProducer:
@@ -21,9 +20,8 @@ class KafkaJsonProducer:
             max_request_size=5242880,  # 1 MB
             buffer_memory=5242880,  # 1 MB
             request_timeout_ms=15000,
-            api_version_auto_timeout_ms=5000
+            api_version_auto_timeout_ms=5000,
         )
-        self.fake = Faker()
 
         # id
         self._customer_id_start = 0
