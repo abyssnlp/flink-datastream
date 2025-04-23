@@ -26,5 +26,6 @@ For setting up Kafka, Flink and Postgres on Kubernetes, you can refer to the fol
 ## Running the example
 
 ```shell
-make run-flink-enrichment
+# substitute with your own docker username
+make run-flink-enrichment docker_username=abyssnlp
 ```
