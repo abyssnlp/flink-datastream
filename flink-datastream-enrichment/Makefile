@@ -10,12 +10,12 @@ ensure-kubectl-helm:
 deploy-producer-job: ensure-kubectl-helm
 	@echo "Deploying orders producer job"
 	cd scripts/producer && docker buildx build -f Dockerfile -t $(DOCKER_USER)/orders-producer:0.1 . && \
-    kubectl -n kafka apply -f ../../k8s/producer-job.yml
+    	kubectl -n kafka apply -f ../../k8s/producer-job.yml
 
  deploy-lookup-job: ensure-kubectl-helm
- 	@echo "Deployting lookup job"
- 	cd scripts/lookup && docker buildx build -f Dockerfile -t $(DOCKER_USER)//customers-lookup:0.1 . && \
-    kubectl apply -f k8s/lookup-table-job.yml
+ 	@echo "Deploying lookup job"
+ 	cd scripts/lookup && docker buildx build -f Dockerfile -t $(DOCKER_USER)/customers-lookup:0.1 . && \
+    	kubectl apply -f k8s/lookup-table-job.yml
 
 setup-topics: ensure-kubectl-helm
 	@echo "Setting up Kafka topics"
@@ -30,4 +30,4 @@ setup-secrets: ensure-kubectl-helm
 run-flink-enrichment:
 	@echo "Running Flink enrichment job; make sure to run setup-secrets first"
 	docker buildx build -f Dockerfile -t $(DOCKER_USER)//flink-datastream-enrichment:1.0 . && \
-    kubectl apply -f k8s/deploy.yml
+    	kubectl apply -f k8s/deploy.yml
