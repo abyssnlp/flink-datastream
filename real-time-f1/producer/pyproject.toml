@@ -1,0 +1,10 @@
+[project]
+name = "producer"
+version = "0.1.0"
+description = "Produces F1 telemetry data to a Kafka topic."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "confluent-kafka>=2.14.0",
+    "requests>=2.32.5",
+]

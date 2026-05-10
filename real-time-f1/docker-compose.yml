@@ -1,0 +1,79 @@
+services:
+  jobmanager:
+    image: apache/flink:2.0.1-java17
+    ports:
+      - "8081:8081"
+    command: jobmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+
+  taskmanager:
+    image: apache/flink:2.0.1-java17
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    scale: 2
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 2
+
+  redpanda:
+    image: redpandadata/redpanda:v24.3.7
+    container_name: redpanda
+    command:
+      - redpanda
+      - start
+      - --smp
+      - "1"
+      - --memory
+      - 1G
+      - --reserve-memory
+      - 0M
+      - --overprovisioned
+      - --node-id
+      - "0"
+      - --check=false
+      - --kafka-addr
+      - internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr
+      - internal://redpanda:9092,external://localhost:19092
+    ports:
+      - "19092:19092"
+      - "9644:9644"
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+    restart: always
+    healthcheck:
+      test: [ "CMD", "rpk", "cluster", "info", "--brokers", "localhost:9092" ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  redpanda-console:
+    image: docker.redpanda.com/redpandadata/console:v3.7.2
+    container_name: redpanda-console
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    entrypoint: /bin/sh
+    command: -c 'echo "$$CONSOLE_CONFIG_FILE" > /tmp/config.yml; /app/console'
+    environment:
+      CONFIG_FILEPATH: /tmp/config.yml
+      CONSOLE_CONFIG_FILE: |
+        kafka:
+          brokers: ["redpanda:9092"]
+        redpanda:
+          adminApi:
+            enabled: true
+            urls: ["http://redpanda:9644"]
+    ports:
+      - "8080:8080"
+    restart: always
+
+volumes:
+    redpanda-data:
