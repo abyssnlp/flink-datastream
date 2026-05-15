@@ -8,6 +8,7 @@ services:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
+        rest.profiling.enabled: true
 
   taskmanager:
     image: apache/flink:2.0.1-java17
@@ -20,6 +21,7 @@ services:
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
         taskmanager.numberOfTaskSlots: 2
+        rest.profiling.enabled: true
 
   redpanda:
     image: redpandadata/redpanda:v24.3.7
@@ -75,5 +77,47 @@ services:
       - "8080:8080"
     restart: always
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.1
+    container_name: clickhouse
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./clickhouse/config/config.xml:/etc/clickhouse-server/config.d/docker.xml:ro
+      - ./clickhouse/config/users.xml:/etc/clickhouse-server/users.d/docker.xml:ro
+    environment:
+      CLICKHOUSE_DB: analytics
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: test123
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    deploy:
+      resources:
+        limits:
+          memory: 8g
+        reservations:
+          memory: 4g
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_INSTALL_PLUGINS: "grafana-clickhouse-datasource"
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    restart: always
+
 volumes:
     redpanda-data:
+    clickhouse_data:
+    grafana-data:

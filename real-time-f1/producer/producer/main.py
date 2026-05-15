@@ -102,9 +102,9 @@ class F1Producer:
 
     def produce_messages(self) -> None:
         self._ensure_topics()
-        # self._produce_many(self.kafka_topics["drivers"], self.drivers)
-        # self._produce_many(self.kafka_topics["position"], self.get_positions())
-        # self._produce_many(self.kafka_topics["location"], self.get_location())
+        self._produce_many(self.kafka_topics["drivers"], self.drivers)
+        self._produce_many(self.kafka_topics["position"], self.get_positions())
+        self._produce_many(self.kafka_topics["location"], self.get_location())
         self._produce_many(self.kafka_topics["car_data"], self.get_car_data())
 
     def _get_api_data(self, endpoint: str, params: Dict) -> List[Dict]:
@@ -171,7 +171,7 @@ class F1Producer:
         return list(chain.from_iterable(car_data))
 
 
-if __name__ == "__main__":
+def main() -> None:
     F1_SESSION_KEY = 11280  # Miami Grand Prix 2026
     F1_MEETING_KEY = 1284
     KAFKA_BROKER = "localhost:19092"
@@ -186,3 +186,7 @@ if __name__ == "__main__":
         KAFKA_BROKER, F1_SESSION_KEY, F1_MEETING_KEY, BASE_URL, KAFKA_TOPICS
     )
     producer.produce_messages()
+
+
+if __name__ == "__main__":
+    main()
