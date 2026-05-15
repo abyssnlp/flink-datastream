@@ -3,6 +3,9 @@ Get data from OpenF1 API and produce to Kafka
 Get drivers
 """
 
+from __future__ import annotations
+
+import threading
 import time
 from typing import List, Dict
 from itertools import chain
@@ -84,7 +87,9 @@ class F1Producer:
                 f"Message delivered to {msg.topic()} [{msg.partition()}] at offset {msg.offset()}"
             )
 
-    def _produce_many(self, topic: str, records: List[dict]) -> None:
+    def _produce_many(
+        self, topic: str, records: List[dict], rate_limit: int | None = None
+    ) -> None:
         for record in records:
             payload = json.dumps(record).encode("utf-8")
             while True:
@@ -98,14 +103,38 @@ class F1Producer:
                 except BufferError:
                     self.producer.poll(1.0)
             self.producer.poll(0)
+            if rate_limit is not None:
+                time.sleep(1.0 / rate_limit)
         self.producer.flush()
 
     def produce_messages(self) -> None:
         self._ensure_topics()
         self._produce_many(self.kafka_topics["drivers"], self.drivers)
-        self._produce_many(self.kafka_topics["position"], self.get_positions())
-        self._produce_many(self.kafka_topics["location"], self.get_location())
-        self._produce_many(self.kafka_topics["car_data"], self.get_car_data())
+
+        # Run position, location, and car_data producers in parallel with different rates
+        threads = [
+            threading.Thread(
+                target=self._produce_many,
+                args=(self.kafka_topics["position"], self.get_positions()),
+                kwargs={"rate_limit": 5},
+            ),
+            threading.Thread(
+                target=self._produce_many,
+                args=(self.kafka_topics["location"], self.get_location()),
+                kwargs={"rate_limit": 30},
+            ),
+            threading.Thread(
+                target=self._produce_many,
+                args=(self.kafka_topics["car_data"], self.get_car_data()),
+                kwargs={"rate_limit": 30},
+            ),
+        ]
+
+        for thread in threads:
+            thread.start()
+
+        for thread in threads:
+            thread.join()
 
     def _get_api_data(self, endpoint: str, params: Dict) -> List[Dict]:
         url = f"{self.base_url}/{endpoint}"

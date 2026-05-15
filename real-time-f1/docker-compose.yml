@@ -108,13 +108,15 @@ services:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
       GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_PANELS_DISABLE_SANITIZE_HTML: "true"
+      GF_DASHBOARDS_MIN_REFRESH_INTERVAL: "1s"
       GF_INSTALL_PLUGINS: "grafana-clickhouse-datasource"
     ports:
       - "3000:3000"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
-      - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
     restart: always
 
 volumes:

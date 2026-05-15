@@ -10,7 +10,6 @@ datasources:
       host: clickhouse
       port: 8123
       username: default
-      password: test123
       defaultDatabase: default
       protocol: http
       secure: false

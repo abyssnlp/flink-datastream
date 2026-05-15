@@ -19,3 +19,36 @@ run-job:
       -e CLICKHOUSE_POSITION_TABLE=position \
       jobmanager \
       flink run -d /tmp/real-time-f1.jar
+
+.PHONY: reset-offsets
+reset-offsets:
+	@echo "Resetting Kafka consumer group offsets..."
+	cd producer && . .venv/bin/activate && python producer/reseeker.py --group real-time-f1 --topic f1_location --offset 0 --execute && python producer/reseeker.py --group real-time-f1 --topic f1_car_data --offset 0 --execute && python producer/reseeker.py --group real-time-f1 --topic f1_drivers --offset 0 --execute
+
+.PHONY: stop-job
+stop-job:
+	@echo "Stopping the job..."
+	@docker compose exec jobmanager sh -c './bin/flink list -r | awk "/RUNNING/ {print \$4}" | xargs -r -n1 ./bin/flink cancel'
+
+.PHONY: drop-tables
+drop-tables:
+	@echo "Dropping ClickHouse tables..."
+	cd producer && . .venv/bin/activate && uv run ch_tables --drop
+
+.PHONY: destroy
+destroy: stop-job drop-tables reset-offsets
+	@echo "Environment has been destroyed and reset!"
+
+.PHONY: create-tables
+create-tables:
+	@echo "Creating ClickHouse tables..."
+	cd producer && . .venv/bin/activate && uv run ch_tables --create
+
+.PHONY: producer
+producer:
+	@echo "Running the producer..."
+	cd producer && . .venv/bin/activate && uv run producer
+
+.PHONY: run
+run: create-tables run-job producer
+	@echo "Environment is up and running!"
