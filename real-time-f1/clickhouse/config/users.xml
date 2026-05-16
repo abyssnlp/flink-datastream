@@ -1,0 +1,24 @@
+<clickhouse>
+    <users>
+        <default replace="replace">
+            <!-- test123 -->
+            <password_sha256_hex>ecd71870d1963316a97e3ac3408c9835ad8cf0f3c1bc703527c30265534f75ae</password_sha256_hex>
+            <networks>
+                <ip>127.0.0.1</ip>
+                <ip>10.0.0.0/8</ip>
+                <ip>172.16.0.0/12</ip>
+                <ip>192.168.0.0/16</ip>
+            </networks>
+            <profile>default</profile>
+        </default>
+    </users>
+
+    <profiles>
+        <default>
+            <max_memory_usage>6000000000</max_memory_usage>
+            <max_execution_time>300</max_execution_time>
+            <max_bytes_before_external_group_by>4000000000</max_bytes_before_external_group_by>
+            <max_bytes_before_external_sort>4000000000</max_bytes_before_external_sort>
+        </default>
+    </profiles>
+</clickhouse>

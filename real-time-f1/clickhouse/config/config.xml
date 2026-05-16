@@ -1,0 +1,5 @@
+<clickhouse>
+    <listen_host>0.0.0.0</listen_host>
+    <max_connections>200</max_connections>
+    <max_concurrent_queries>50</max_concurrent_queries>
+</clickhouse>
