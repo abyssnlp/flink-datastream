@@ -2870,6 +2870,200 @@
       ],
       "title": "P5 Brake",
       "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "description": "Latest x/y location per driver from the location table for the selected Miami 2026 meeting and session.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisGridShow": false,
+            "axisLabel": "",
+            "axisPlacement": "hidden",
+            "fillOpacity": 85,
+            "pointShape": "circle",
+            "pointSize": {
+              "fixed": 5
+            },
+            "pointStrokeWidth": 2,
+            "show": "points"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "TrackY"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#777777",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.show",
+                "value": "lines"
+              },
+              {
+                "id": "custom.pointSize.fixed",
+                "value": 1
+              },
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "solid"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "DriverY"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#1f78ff",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.show",
+                "value": "points"
+              },
+              {
+                "id": "custom.pointSize.fixed",
+                "value": 14
+              },
+              {
+                "id": "custom.pointStrokeWidth",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 16,
+        "w": 24,
+        "x": 0,
+        "y": 75
+      },
+      "id": 37,
+      "options": {
+        "legend": {
+          "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+        "mapping": "manual",
+          "series": [
+            {
+              "frame": {
+                "matcher": {
+                  "id": "byIndex",
+                  "options": 0
+                }
+              },
+              "name": {
+                "fixed": "Track"
+              },
+              "x": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "TrackX"
+                }
+              },
+              "y": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "TrackY"
+                }
+              }
+            },
+            {
+              "frame": {
+                "matcher": {
+                  "id": "byIndex",
+                  "options": 1
+                }
+              },
+              "name": {
+                "fixed": "Drivers"
+              },
+              "x": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "DriverX"
+                }
+              },
+              "y": {
+                "matcher": {
+                  "id": "byName",
+                  "options": "DriverY"
+                }
+              }
+            }
+          ],
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.3.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "clickhouse"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "queryType": "sql",
+          "rawSql": "WITH\nreference_driver AS\n(\n    SELECT driver_number\n    FROM location FINAL\n    WHERE meeting_key = ${meeting_key}\n      AND session_key = ${session_key}\n    GROUP BY driver_number\n    ORDER BY count() DESC, driver_number ASC\n    LIMIT 1\n)\nSELECT\n    x AS TrackX,\n    y AS TrackY\nFROM\n(\n    SELECT\n        date,\n        x,\n        y\n    FROM location FINAL\n    WHERE meeting_key = ${meeting_key}\n      AND session_key = ${session_key}\n      AND driver_number = (SELECT driver_number FROM reference_driver)\n    ORDER BY date DESC\n    LIMIT 1200\n)\nORDER BY date ASC",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "clickhouse"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "queryType": "sql",
+          "rawSql": "WITH\nlatest_locations AS\n(\n    SELECT\n        driver_number,\n        argMax(x, date) AS DriverX,\n        argMax(y, date) AS DriverY,\n        argMax(name_acronym, date) AS code,\n        argMax(full_name, date) AS driver,\n        argMax(team_name, date) AS team\n    FROM location FINAL\n    WHERE meeting_key = ${meeting_key}\n      AND session_key = ${session_key}\n    GROUP BY driver_number\n)\nSELECT\n    DriverX,\n    DriverY,\n    concat(code, ' #', toString(driver_number)) AS Driver,\n    driver AS `Full Name`,\n    team AS Team\nFROM latest_locations\nORDER BY driver_number ASC",
+          "refId": "B"
+        }
+      ],
+      "title": "Driver Track Locations",
+      "type": "xychart"
     }
   ],
   "preload": false,

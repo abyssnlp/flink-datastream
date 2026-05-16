@@ -28,7 +28,7 @@ reset-offsets:
 .PHONY: stop-job
 stop-job:
 	@echo "Stopping the job..."
-	@docker compose exec jobmanager sh -c './bin/flink list -r | awk "/RUNNING/ {print \$4}" | xargs -r -n1 ./bin/flink cancel'
+	@docker compose exec jobmanager sh -c './bin/flink list -r | awk "/RUNNING/ {print \$$4}" | xargs -r -n1 ./bin/flink cancel'
 
 .PHONY: drop-tables
 drop-tables:
