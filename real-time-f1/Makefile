@@ -35,8 +35,18 @@ drop-tables:
 	@echo "Dropping ClickHouse tables..."
 	cd producer && . .venv/bin/activate && uv run ch_tables --drop
 
+.PHONY: drop-topics
+drop-topics:
+	@echo "Deleting Kafka Topics..."
+	@docker exec -it redpanda rpk topic delete \
+      f1_position \
+      f1_location \
+      f1_car_data \
+      f1_drivers \
+      --brokers localhost:9092
+
 .PHONY: destroy
-destroy: stop-job drop-tables reset-offsets
+destroy: stop-job drop-tables reset-offsets drop-topics
 	@echo "Environment has been destroyed and reset!"
 
 .PHONY: create-tables

@@ -5,8 +5,9 @@ Get drivers
 
 from __future__ import annotations
 
-import threading
+import os
 import time
+from datetime import datetime, timezone
 from typing import List, Dict
 from itertools import chain
 import json
@@ -25,7 +26,11 @@ class F1Producer:
         meeting_key: int,
         base_url: str,
         kafka_topics: Dict[str, str],
+        replay_speed: float = 60.0,
     ):
+        if replay_speed <= 0:
+            raise ValueError("replay_speed must be greater than 0")
+
         self.producer = Producer(
             {
                 "bootstrap.servers": broker,
@@ -40,6 +45,7 @@ class F1Producer:
         self.meeting_key = meeting_key
         self.base_url = base_url
         self.kafka_topics = kafka_topics
+        self.replay_speed = replay_speed
         self.drivers = self.get_drivers()
 
     def _ensure_topics(self) -> None:
@@ -87,54 +93,97 @@ class F1Producer:
                 f"Message delivered to {msg.topic()} [{msg.partition()}] at offset {msg.offset()}"
             )
 
-    def _produce_many(
-        self, topic: str, records: List[dict], rate_limit: int | None = None
+    def _produce_one(
+        self,
+        topic: str,
+        record: dict,
+        event_time: datetime | None = None,
     ) -> None:
-        for record in records:
-            payload = json.dumps(record).encode("utf-8")
-            while True:
-                try:
+        payload = json.dumps(record).encode("utf-8")
+        timestamp_ms = (
+            int(event_time.timestamp() * 1000) if event_time is not None else None
+        )
+
+        while True:
+            try:
+                if timestamp_ms is None:
                     self.producer.produce(
                         topic,
                         value=payload,
                         callback=self.delivery_callback,
                     )
-                    break
-                except BufferError:
-                    self.producer.poll(1.0)
-            self.producer.poll(0)
-            if rate_limit is not None:
-                time.sleep(1.0 / rate_limit)
+                else:
+                    self.producer.produce(
+                        topic,
+                        value=payload,
+                        timestamp=timestamp_ms,
+                        callback=self.delivery_callback,
+                    )
+                break
+            except BufferError:
+                self.producer.poll(1.0)
+
+        self.producer.poll(0)
+
+    def _produce_many(self, topic: str, records: List[dict]) -> None:
+        for record in records:
+            self._produce_one(topic, record)
+
+        self.producer.flush()
+
+    @staticmethod
+    def _parse_event_time(record: dict) -> datetime:
+        value = record.get("date")
+        if not value:
+            raise ValueError(f"Record is missing required date field: {record}")
+
+        event_time = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if event_time.tzinfo is None:
+            event_time = event_time.replace(tzinfo=timezone.utc)
+
+        return event_time.astimezone(timezone.utc)
+
+    def _produce_telemetry_in_event_time(
+        self,
+        topic_records: Dict[str, List[dict]],
+    ) -> None:
+        events = [
+            (self._parse_event_time(record), topic, record)
+            for topic, records in topic_records.items()
+            for record in records
+        ]
+        events.sort(key=lambda event: event[0])
+
+        if not events:
+            return
+
+        first_event_time = events[0][0]
+        playback_started_at = time.monotonic()
+
+        for event_time, topic, record in events:
+            event_offset_seconds = (event_time - first_event_time).total_seconds()
+            target_elapsed_seconds = event_offset_seconds / self.replay_speed
+            sleep_seconds = (
+                playback_started_at + target_elapsed_seconds - time.monotonic()
+            )
+            if sleep_seconds > 0:
+                time.sleep(sleep_seconds)
+
+            self._produce_one(topic, record, event_time)
+
         self.producer.flush()
 
     def produce_messages(self) -> None:
         self._ensure_topics()
         self._produce_many(self.kafka_topics["drivers"], self.drivers)
 
-        # Run position, location, and car_data producers in parallel with different rates
-        threads = [
-            threading.Thread(
-                target=self._produce_many,
-                args=(self.kafka_topics["position"], self.get_positions()),
-                kwargs={"rate_limit": 5},
-            ),
-            threading.Thread(
-                target=self._produce_many,
-                args=(self.kafka_topics["location"], self.get_location()),
-                kwargs={"rate_limit": 30},
-            ),
-            threading.Thread(
-                target=self._produce_many,
-                args=(self.kafka_topics["car_data"], self.get_car_data()),
-                kwargs={"rate_limit": 30},
-            ),
-        ]
-
-        for thread in threads:
-            thread.start()
-
-        for thread in threads:
-            thread.join()
+        self._produce_telemetry_in_event_time(
+            {
+                self.kafka_topics["position"]: self.get_positions(),
+                self.kafka_topics["location"]: self.get_location(),
+                self.kafka_topics["car_data"]: self.get_car_data(),
+            }
+        )
 
     def _get_api_data(self, endpoint: str, params: Dict) -> List[Dict]:
         url = f"{self.base_url}/{endpoint}"
@@ -211,8 +260,14 @@ def main() -> None:
         "drivers": "f1_drivers",
     }
     BASE_URL = "https://api.openf1.org/v1"
+    REPLAY_SPEED = float(os.getenv("F1_REPLAY_SPEED", "60"))
     producer = F1Producer(
-        KAFKA_BROKER, F1_SESSION_KEY, F1_MEETING_KEY, BASE_URL, KAFKA_TOPICS
+        KAFKA_BROKER,
+        F1_SESSION_KEY,
+        F1_MEETING_KEY,
+        BASE_URL,
+        KAFKA_TOPICS,
+        replay_speed=REPLAY_SPEED,
     )
     producer.produce_messages()
 
